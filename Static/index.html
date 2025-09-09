@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRIM-PRO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c7b2b;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        button {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .disabled {
+            background-color: lightgreen;
+            cursor: not-allowed;
+        }
+        .enabled {
+            background-color: darkgreen;
+            color: white;
+        }
+        .trim-button-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .phrase-container {
+            display: block;
+            padding: 20px;
+            border: 2px solid #2c7b2b;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 800px;
+            text-align: justify;
+            line-height: 1.8;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }
+        .instruction-text {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c7b2b;
+            margin-bottom: 20px;
+        }
+        .phrase-box {
+            display: inline-block;
+            margin: 5px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: lightgreen;
+            white-space: normal;
+        }
+        .phrase-box.selected {
+            background-color: darkgreen;
+            color: white;
+        }
+        .output {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #2c7b2b;
+        }
+        audio {
+            display: block;
+            margin: 20px auto;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2c7b2b;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>TRIM-PRO</h1>
+
+    <!-- Upload Section -->
+    <div class="section">
+        <p>Upload your audio file here</p>
+        <input type="file" id="audio-upload" accept="audio/*">
+        <button id="upload-button" class="enabled">Upload</button>
+        <p id="upload-status"></p>
+        <div id="upload-loader" class="loader"></div>
+    </div>
+
+    <!-- Transcription Section -->
+    <div class="section">
+        <button id="transcribe-button" class="disabled" disabled>Get Transcript</button>
+        <div id="transcribe-loader" class="loader"></div>
+        <p class="instruction-text">
+            Please select the phrases you wish to delete and click 'Trim and Get Duration' button to get your output:
+        </p>
+        <div id="transcription-container" class="phrase-container"></div>
+    </div>
+
+    <!-- Trim Section -->
+    <div class="trim-button-container">
+        <button id="trim-button" class="disabled" disabled>Trim and Get Duration</button>
+        <div id="trim-loader" class="loader"></div>
+    </div>
+
+    <div class="section">
+        <div class="output" id="output"></div>
+        <audio id="audio-output" controls></audio>
+    </div>
+
+    <script>
+        let fileId = null; // To store the uploaded file ID
+        let selectedPhrases = []; // To store selected phrases
+
+        // Show loader during execution
+        function toggleLoader(loaderId, show) {
+            const loader = document.getElementById(loaderId);
+            loader.style.display = show ? "block" : "none";
+        }
+
+        // Reset UI elements, excluding the file input
+        function resetUI(excludeFileInput = false) {
+            fileId = null;
+            selectedPhrases = [];
+            document.getElementById("transcription-container").innerHTML = ""; // Clear transcription
+            document.getElementById("output").innerText = ""; // Clear output
+            const audioOutput = document.getElementById("audio-output");
+            audioOutput.src = ""; // Clear audio player
+            audioOutput.style.display = "none"; // Hide audio player
+            const transcribeButton = document.getElementById("transcribe-button");
+            transcribeButton.disabled = true; // Disable Transcribe button
+            transcribeButton.classList.remove("enabled");
+            transcribeButton.classList.add("disabled");
+            const trimButton = document.getElementById("trim-button");
+            trimButton.disabled = true; // Disable Trim button
+            trimButton.classList.remove("enabled");
+            trimButton.classList.add("disabled");
+
+            if (!excludeFileInput) {
+                document.getElementById("upload-status").innerText = ""; // Clear upload status
+            }
+        }
+
+        document.getElementById("upload-button").addEventListener("click", async () => {
+            const fileInput = document.getElementById("audio-upload");
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select an audio file to upload.");
+                return;
+            }
+
+            resetUI(true); // Reset UI but exclude clearing the file input
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            toggleLoader("upload-loader", true);
+            try {
+                const response = await fetch("/upload-audio", {
+                    method: "POST",
+                    body: formData,
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    fileId = result.file_id;
+                    const duration = result.duration; // Get duration from the response
+                    document.getElementById("upload-status").innerText = `Audio file uploaded successfully. Duration: ${duration.toFixed(2)} seconds.`;
+                    const transcribeButton = document.getElementById("transcribe-button");
+                    transcribeButton.disabled = false;
+                    transcribeButton.classList.remove("disabled");
+                    transcribeButton.classList.add("enabled");
+                } else {
+                    alert(result.detail || "Error uploading the file.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("An error occurred while uploading the file.");
+            } finally {
+                toggleLoader("upload-loader", false);
+            }
+        });
+
+        document.getElementById("transcribe-button").addEventListener("click", async () => {
+            if (!fileId) return;
+
+            toggleLoader("transcribe-loader", true);
+            try {
+                const response = await fetch(`/transcribe-audio/${fileId}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    const transcriptionContainer = document.getElementById("transcription-container");
+                    transcriptionContainer.innerHTML = "";
+
+                    result.transcription.forEach((phrase, index) => {
+                        const phraseBox = document.createElement("div");
+                        phraseBox.className = "phrase-box";
+                        phraseBox.innerText = phrase.text;
+                        phraseBox.dataset.index = index;
+
+                        phraseBox.addEventListener("click", () => {
+                            phraseBox.classList.toggle("selected");
+                            const phraseText = phrase.text;
+
+                            if (selectedPhrases.includes(phraseText)) {
+                                selectedPhrases = selectedPhrases.filter((text) => text !== phraseText);
+                            } else {
+                                selectedPhrases.push(phraseText);
+                            }
+                        });
+
+                        transcriptionContainer.appendChild(phraseBox);
+                    });
+
+                    const trimButton = document.getElementById("trim-button");
+                    trimButton.disabled = false;
+                    trimButton.classList.remove("disabled");
+                    trimButton.classList.add("enabled");
+                } else {
+                    alert(result.detail || "Error getting the transcript.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("An error occurred while fetching the transcription.");
+            } finally {
+                toggleLoader("transcribe-loader", false);
+            }
+        });
+
+        document.getElementById("trim-button").addEventListener("click", async () => {
+            if (!fileId || selectedPhrases.length === 0) {
+                alert("Please select phrases to trim.");
+                return;
+            }
+
+            toggleLoader("trim-loader", true);
+            try {
+                const response = await fetch("/trim-audio", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        file_id: fileId,
+                        delete_texts: selectedPhrases,
+                    }),
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    const output = document.getElementById("output");
+                    output.innerText = `The duration of the final trimmed audio is: ${result.new_duration} sec`;
+
+                    const audioOutput = document.getElementById("audio-output");
+                    audioOutput.src = `/download-audio/${fileId}?t=${new Date().getTime()}`; // Cache-busting
+                    audioOutput.style.display = "block";
+                } else {
+                    console.error(result);
+                    alert(result.detail || "Error trimming the audio.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("An error occurred while trimming the audio.");
+            } finally {
+                toggleLoader("trim-loader", false);
+            }
+        });
+    </script>
+</body>
+</html>
