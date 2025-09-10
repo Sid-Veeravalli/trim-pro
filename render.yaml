@@ -2,14 +2,12 @@ services:
   - type: web
     name: audio-trimmer-api
     env: python
-    # This plan specification selects the free tier
     plan: free 
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18 # Using a specific Python version is good practice
-    # This section adds the persistent disk for file storage
+        value: 3.9.18 # This line has been un-indented to the correct level
     disks:
       - name: temp-audio
         mountPath: /app/temp_audio_files
