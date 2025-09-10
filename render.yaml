@@ -1,9 +1,13 @@
+# This is the required configuration for your application to work.
+
 services:
-- type: web
-  name: audio-trimmer-api
-  env: python
-  buildCommand: pip install -r requirements.txt
-  startCommand: uvicorn speech:app --host 0.0.0.0 --port $PORT
-  envVars:
-  - key: PYTHON_VERSION
-    value: 3.9.18
+  - type: web
+    name: audio-trimmer-api
+    env: python
+    plan: starter
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
+    disks:
+      - name: temp-audio
+        mountPath: /app/temp_audio_files
+        sizeGB: 1
