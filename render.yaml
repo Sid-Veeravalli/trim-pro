@@ -1,9 +1,3 @@
-# First, define all the disks your project needs at the top level
-disks:
-  - name: temp-audio
-    sizeGB: 1
-
-# Next, define the services and tell them which disk to use
 services:
   - type: web
     name: audio-trimmer-api
@@ -14,7 +8,9 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.18
-    # Use the singular 'disk' property to attach the disk defined above
-    disk:
-      name: temp-audio
-      mountPath: /app/temp_audio_files
+    # The 'disks' block belongs inside the service that uses it.
+    # It must have the same indentation as other properties like 'name' and 'plan'.
+    disks:
+      - name: temp-audio
+        mountPath: /app/temp_audio_files
+        sizeGB: 1
