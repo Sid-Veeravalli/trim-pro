@@ -1,15 +1,17 @@
+# This configuration will work but costs $7/month.
+# It uses the 'starter' plan which is required for persistent disks.
+
 services:
   - type: web
     name: audio-trimmer-api
     env: python
-    plan: free
+    plan: starter  # Changed from 'free' to 'starter' to enable disks
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: / # Optional but recommended for faster startups
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.18
-    # The 'disks' block belongs inside the service that uses it.
-    # It must have the same indentation as other properties like 'name' and 'plan'.
     disks:
       - name: temp-audio
         mountPath: /app/temp_audio_files
