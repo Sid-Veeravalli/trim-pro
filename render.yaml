@@ -1,12 +1,9 @@
-# Example of what your render.yaml might contain
 services:
-  - type: web
-    name: audio-trimmer-api
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
-    plan: starter   # <--- THIS IS THE LINE CAUSING THE CHARGE
-    disks:
-      - name: temp-audio
-        mountPath: /app/temp_audio_files # Make sure this matches my previous guide
-        sizeGB: 1
+- type: web
+  name: audio-trimmer-api
+  env: python
+  buildCommand: pip install -r requirements.txt
+  startCommand: uvicorn speech:app --host 0.0.0.0 --port $PORT
+  envVars:
+  - key: PYTHON_VERSION
+    value: 3.9.18
