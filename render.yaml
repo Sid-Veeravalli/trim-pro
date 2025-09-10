@@ -1,14 +1,20 @@
+# First, define all the disks your project needs at the top level
+disks:
+  - name: temp-audio
+    sizeGB: 1
+
+# Next, define the services and tell them which disk to use
 services:
   - type: web
     name: audio-trimmer-api
     env: python
-    plan: free 
+    plan: free
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.18 # This line has been un-indented to the correct level
-    disks:
-      - name: temp-audio
-        mountPath: /app/temp_audio_files
-        sizeGB: 1
+        value: 3.9.18
+    # Use the singular 'disk' property to attach the disk defined above
+    disk:
+      name: temp-audio
+      mountPath: /app/temp_audio_files
