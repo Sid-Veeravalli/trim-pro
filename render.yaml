@@ -1,18 +1,12 @@
-# This configuration will work but costs $7/month.
-# It uses the 'starter' plan which is required for persistent disks.
-
+# Example of what your render.yaml might contain
 services:
   - type: web
     name: audio-trimmer-api
     env: python
-    plan: starter  # Changed from 'free' to 'starter' to enable disks
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn speech:app --host 0.0.0.0 --port $PORT"
-    healthCheckPath: / # Optional but recommended for faster startups
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.9.18
+    plan: starter   # <--- THIS IS THE LINE CAUSING THE CHARGE
     disks:
       - name: temp-audio
-        mountPath: /app/temp_audio_files
+        mountPath: /app/temp_audio_files # Make sure this matches my previous guide
         sizeGB: 1
